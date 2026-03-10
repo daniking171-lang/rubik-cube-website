@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body style="">
+    <nav style="text-align: center; width: 90vw; margin: auto; margin-top: 4vw; background-color: #1E90FF; margin-top: 5vw;"
+        class="topmenu">
+        <a href="index.html">Home</a>
+        <a href="how-to-solve.html">How To Solve</a>
+        <a href="tip-&-tricks.html">Tip & Tricks</a>
+        <a style="color: #ffd700;" href="practice-timer.html">Practice Timer</a>
+        <a href="designs.html">Designs</a>
+        <a href="blog.html">Blog</a>
+        <a href="customize-code.html">Customize Code</a>
+    </nav>
+    <footer class="footer">
+        Timer - Page
+    </footer>
+
+
+    <script>
+        // =============================
+        // RUBIK PRACTICE TIMER SYSTEM
+        // =============================
+
+        // GLOBAL VARIABLES
+        let timerRunning = false
+        let startTime = 0
+        let interval = null
+        let solves = []
+        let inspectionEnabled = false
+        let inspectionTime = 15
+        let inspectionInterval = null
+
+        // CREATE MAIN TIMER UI
+        const container = document.createElement("div")
+        container.style.textAlign = "center"
+        container.style.marginTop = "4vw"
+        document.body.appendChild(container)
+
+        // SCRAMBLE
+        const scramble = document.createElement("h2")
+        scramble.style.fontSize = "2vw"
+        scramble.style.marginBottom = "2vw"
+        container.appendChild(scramble)
+
+        // TIMER DISPLAY
+        const timerDisplay = document.createElement("div")
+        timerDisplay.innerText = "0.00"
+        timerDisplay.style.fontSize = "8vw"
+        timerDisplay.style.fontFamily = "monospace"
+        timerDisplay.style.color = "#00ffcc"
+        container.appendChild(timerDisplay)
+
+        // READY INDICATORS
+        const indicatorContainer = document.createElement("div")
+        indicatorContainer.style.display = "flex"
+        indicatorContainer.style.justifyContent = "center"
+        indicatorContainer.style.marginTop = "2vw"
+        container.appendChild(indicatorContainer)
+
+        function createIndicator() {
+            const dot = document.createElement("div")
+            dot.style.width = "2vw"
+            dot.style.height = "2vw"
+            dot.style.borderRadius = "50%"
+            dot.style.margin = "1vw"
+            dot.style.background = "green"
+            dot.style.boxShadow = "0 0 20px green"
+            return dot
+        }
+
+        const leftIndicator = createIndicator()
+        const rightIndicator = createIndicator()
+
+        indicatorContainer.appendChild(leftIndicator)
+        indicatorContainer.appendChild(rightIndicator)
+
+        // BUTTONS
+        const btnContainer = document.createElement("div")
+        btnContainer.style.marginTop = "2vw"
+        container.appendChild(btnContainer)
+
+        function createButton(text) {
+            const btn = document.createElement("button")
+            btn.innerText = text
+            btn.style.margin = "0.5vw"
+            btn.style.padding = "0.7vw 1.5vw"
+            btn.style.fontSize = "1vw"
+            btn.style.cursor = "pointer"
+            return btn
+        }
+
+        const resetBtn = createButton("Reset")
+        const deleteBtn = createButton("Delete Last")
+        const clearBtn = createButton("Clear All")
+
+        btnContainer.appendChild(resetBtn)
+        btnContainer.appendChild(deleteBtn)
+        btnContainer.appendChild(clearBtn)
+
+        // PUZZLE SELECT
+        const puzzleSelect = document.createElement("select")
+        const puzzles = ["2x2", "3x3", "4x4", "5x5", "Pyraminx", "Skewb", "Megaminx"]
+
+        puzzles.forEach(p => {
+            const option = document.createElement("option")
+            option.text = p
+            puzzleSelect.add(option)
+        })
+
+        puzzleSelect.style.marginTop = "2vw"
+        container.appendChild(puzzleSelect)
+
+        // HISTORY PANEL
+        const historyTitle = document.createElement("h3")
+        historyTitle.innerText = "Solve History"
+        historyTitle.style.marginTop = "3vw"
+        container.appendChild(historyTitle)
+
+        const historyList = document.createElement("ul")
+        historyList.style.listStyle = "none"
+        historyList.style.fontSize = "1.3vw"
+        container.appendChild(historyList)
+
+        // STATS PANEL
+        const statsTitle = document.createElement("h3")
+        statsTitle.innerText = "Statistics"
+        statsTitle.style.marginTop = "3vw"
+        container.appendChild(statsTitle)
+
+        const stats = document.createElement("div")
+        container.appendChild(stats)
+
+        // SCRAMBLE GENERATOR
+        function generateScramble() {
+            const moves = ["R", "L", "U", "D", "F", "B"]
+            const modifiers = ["", "'", "2"]
+            let result = ""
+
+            for (let i = 0; i < 20; i++) {
+                const m = moves[Math.floor(Math.random() * moves.length)]
+                const mod = modifiers[Math.floor(Math.random() * modifiers.length)]
+                result += m + mod + " "
+            }
+
+            scramble.innerText = result
+        }
+
+        generateScramble()
+
+        // TIMER FORMAT
+        function formatTime(ms) {
+            return (ms / 1000).toFixed(2)
+        }
+
+        // START TIMER
+        function startTimer() {
+            startTime = Date.now()
+            timerRunning = true
+
+            leftIndicator.style.background = "red"
+            rightIndicator.style.background = "red"
+
+            interval = setInterval(() => {
+                const now = Date.now()
+                timerDisplay.innerText = formatTime(now - startTime)
+            }, 10)
+        }
+
+        // STOP TIMER
+        function stopTimer() {
+            timerRunning = false
+            clearInterval(interval)
+
+            leftIndicator.style.background = "green"
+            rightIndicator.style.background = "green"
+
+            const time = parseFloat(timerDisplay.innerText)
+            solves.push(time)
+
+            updateHistory()
+            updateStats()
+            generateScramble()
+        }
+
+        // HISTORY
+        function updateHistory() {
+            historyList.innerHTML = ""
+
+            solves.forEach((t, i) => {
+                const li = document.createElement("li")
+                li.innerText = (i + 1) + ". " + t
+                historyList.appendChild(li)
+            })
+        }
+
+        // STATISTICS
+        function average(arr) {
+            const sum = arr.reduce((a, b) => a + b, 0)
+            return (sum / arr.length).toFixed(2)
+        }
+
+        function ao5() {
+            if (solves.length < 5) return "-"
+            const last = solves.slice(-5)
+            return average(last)
+        }
+
+        function ao12() {
+            if (solves.length < 12) return "-"
+            const last = solves.slice(-12)
+            return average(last)
+        }
+
+        function updateStats() {
+
+            if (solves.length === 0) {
+                stats.innerHTML = ""
+                return
+            }
+
+            const best = Math.min(...solves)
+            const worst = Math.max(...solves)
+            const avg = average(solves)
+
+            stats.innerHTML = `
+Best: ${best}<br>
+Worst: ${worst}<br>
+Average: ${avg}<br>
+Ao5: ${ao5()}<br>
+Ao12: ${ao12()}
+`
+        }
+
+        // BUTTON FUNCTIONS
+        resetBtn.onclick = () => {
+            timerDisplay.innerText = "0.00"
+        }
+
+        deleteBtn.onclick = () => {
+            solves.pop()
+            updateHistory()
+            updateStats()
+        }
+
+        clearBtn.onclick = () => {
+            solves = []
+            updateHistory()
+            updateStats()
+        }
+
+        // INSPECTION MODE
+        function startInspection() {
+
+            let time = inspectionTime
+            timerDisplay.innerText = time
+
+            inspectionInterval = setInterval(() => {
+                time--
+                timerDisplay.innerText = time
+
+                if (time <= 0) {
+                    clearInterval(inspectionInterval)
+                    startTimer()
+                }
+
+            }, 1000)
+        }
+
+        // KEYBOARD CONTROL
+        document.addEventListener("keydown", (e) => {
+
+            if (e.code === "Space") {
+
+                e.preventDefault()
+
+                if (!timerRunning) {
+                    if (inspectionEnabled) {
+                        startInspection()
+                    } else {
+                        startTimer()
+                    }
+                } else {
+                    stopTimer()
+                }
+
+            }
+
+        })
+
+        // SIMPLE ANIMATION LOOP
+        function animateIndicators() {
+
+            let glow = 10
+
+            setInterval(() => {
+
+                glow += 2
+                if (glow > 30) glow = 10
+
+                leftIndicator.style.boxShadow = "0 0 " + glow + "px green"
+                rightIndicator.style.boxShadow = "0 0 " + glow + "px green"
+
+            }, 100)
+
+        }
+
+        animateIndicators()
+    </script>
+    
+    <style>
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            background-color: #1E90FF;
+            color: white;
+            font-size: 2vw;
+            height: 4vw;
+            /* Footer ki height */
+            line-height: 4vw;
+            /* Vertical center text */
+        }
+
+        .topmenu {
+            transition: 0.5s;
+            border-radius: 0.5vw;
+        }
+
+        .topmenu:hover {
+            border-radius: 5vw;
+            transition: 0.5s;
+        }
+
+        a {
+            text-decoration: none;
+            margin-left: 3vw;
+            color: white;
+            font-size: 2vw;
+            transition: 0.5s;
+        }
+
+        a:hover {
+            color: #ffa500;
+            transition: 0.5s;
+            font-size: 2.5vw;
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+<br><br><br><br><br><br><br>
+</body>
+
+
+</html>
